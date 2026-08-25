@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <!-- スマホファースト：この viewport 設定が無いとPC表示のまま縮小されてしまうので必須です -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>とおまち夏花火ナイト｜ふらっと行ける夏の特別</title>
+  <!-- 修正案：日付・無料の情報を追加してCTRを狙う -->
+  <meta name="description" content="とおまち夏花火ナイト。3,000発の花火を駅から徒歩10分・混雑ゆったりで満喫。8月中旬の土曜開催・入場無料。気合い入れずにふらっと行ける、夏のいちばん。">
+
+  <!-- canonical URL：http/https・www有無などの重複URL対策。
+       TODO: 実際の公開URLに差し替えてください（例：GitHub Pagesならリポジトリの公開URL） -->
+  <link rel="canonical" href="https://yuraharu8910.github.io/tomachi-lp/">
+
+  <!-- OGP：SNS（Reels・X・LINEなど）でリンクをシェアされた時のカード表示に使われます -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="とおまち夏花火ナイト">
+  <meta property="og:title" content="とおまち夏花火ナイト｜ふらっと行ける夏の特別">
+  <meta property="og:description" content="3,000発の花火、駅から徒歩10分、混雑ゆったり。気合いを入れすぎなくていい、ふらっと寄れる夏の特別を、とおまちで。">
+  <!-- TODO: 実際の公開URL・OGP画像URLに差し替えてください（画像は1200×630px推奨） -->
+  <meta property="og:url" content="https://yuraharu8910.github.io/tomachi-lp/">
+  <meta property="og:image" content="https://yuraharu8910.github.io/tomachi-lp/images/og-top.jpg">
+  <meta property="og:locale" content="ja_JP">
+  <!-- 追加すると良い例 -->
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/jpeg">
+
+  <!-- Twitter Card：og:title等を流用しつつ、大きい画像カード表示にする指定 -->
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- ファビコン一式：ブラウザやOSによって読み込むサイズ・形式が違うため、
+       favicon.ico（従来ブラウザ用）／PNG各サイズ（現代ブラウザ・iOS用）／
+       Android向けアイコン＋site.webmanifest をまとめて設置しています -->
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#1B2A4A">
+
+  <!-- Google Fonts：元データは日本語フォントを490個のファイルに分割して埋め込んでいたため、
+     ここでは通常のCDN読み込みに変更しています（表示速度・保守性が大きく向上します） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  <!-- チャットボット用CSS(style.cssの後に読み込むこと) -->
+  <link rel="stylesheet" href="chatbot.css">
+</head>
+
+<body>
+
+  <!-- ===================================================
+     カード全体を包むラッパー。PC幅で見たときは中央に
+     スマホサイズのカードとして表示されます（.lp-frame で制御）
+=================================================== -->
+  <div class="lp-frame">
+
+    <!-- ============ ① ファーストビュー（FV） ============ -->
+<header class="fv">
+  <!-- 背景動画（poster＝動画が読み込まれるまで／再生できない環境で表示される代わりの画像）
+       3本の動画（①とおま／②花火／③商店街）を用意し、script.jsのJSで
+       「Aが終わったらBに、Bが終わったらCに、Cが終わったらAに」と
+       順番にふわっと切り替えながら無限ループさせています。
+       1本のvideoタグにloopを付けるだけの方式だと複数動画の切り替えが
+       できないため、videoタグを3つ重ねてCSSのopacityで
+       見た目だけクロスフェードさせる仕組みにしています。 -->
+  <video id="fvBgVideoA" class="fv__bg-video is-active" src="videos/fv-tooma.mp4" poster="images/bg-fv.jpg" autoplay
+    muted playsinline></video>
+  <video id="fvBgVideoB" class="fv__bg-video" src="videos/fv-bg-fireworks.mp4" muted playsinline></video>
+  <video id="fvBgVideoC" class="fv__bg-video" src="videos/fv-bg-street.mp4" muted playsinline></video>
+    <div class="fv__overlay"></div>
+      <!-- id="fvInner"：動画が切り替わるタイミングで、script.jsがこの中の
+           文字（kicker/title/lead）を動画に合わせて差し替えます -->
+      <div class="fv__inner" id="fvInner">
+        <p class="fv__kicker" id="fvKicker">とおまち観光協会 presents</p>
+        <h1 class="fv__title" id="fvTitle">とおまち<br>夏花火<span class="fv__title-accent">ナイト</span>。</h1>
+        <p class="fv__lead" id="fvLead">気合いを入れすぎなくていい、<br>ふらっと寄れる夏の特別。<br>3,000発の花火｜8月中旬の土曜 開催</p>
+      </div>
+
+
+      <!-- ボタンと統計行は、写真の一番下にぴったり固定表示させたいので
+         position:absolute で明示的に下端に配置しています（flexの微妙な挙動に頼らない方法） -->
+      <div class="fv__bottom">
+        <div class="fv__ctas">
+          <!-- ポップアップの予約フォームを開くボタン（js-open-reservation）に変更済み -->
+          <a href="#" class="btn btn--primary js-open-reservation">観覧席を予約する</a>
+          <a href="#lodging" class="btn btn--outline">LINEで宿を相談</a>
+        </div>
+
+        <div class="fv__stats">
+          <span>駅から徒歩10分</span>
+          <span>混雑ゆったり</span>
+          <span>入場無料</span>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- ============ ② 悩み・あるある（深層共感） ============ -->
+    <section class="section section--light">
+      <h2 class="section__title">その気持ち、わかる。</h2>
+
+      <div class="empathy-row">
+        <video class="empathy-row__icon" src="videos/tooma-unadare.mp4" poster="images/tooma-unadare.png" autoplay muted
+          loop playsinline width="84" height="84" aria-hidden="true"></video>
+        <p class="empathy-row__text">「本当はただ、誰かと夏の夜をゆっくり楽しみたいだけなのに」</p>
+      </div>
+
+      <!-- 吹き出しはスクロールで画面に入ったタイミングでふわっと表示（script.js の IntersectionObserver で制御） -->
+      <div class="bubble-card" style="background-image:url('images/bg-nayami.jpg');">
+        <div class="bubble-card__inner">
+          <div class="bubble bubble--left bubble-in" style="animation-delay:.1s">毎年混みすぎて、正直疲れる</div>
+          <div class="bubble bubble--right bubble-in" style="animation-delay:.55s">いつも同じ場所で、代わり映えしない</div>
+          <div class="bubble bubble--left bubble-in" style="animation-delay:1s">わざわざ遠出するのは、少し気が引ける</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ③ 解決（発見・ベネフィット） ============ -->
+    <section class="section section--light">
+      <h2 class="section__title">だから、とおまちが<br>ちょうどいい。</h2>
+
+      <div class="empathy-row empathy-row--reverse">
+        <video class="empathy-row__icon" src="videos/tooma-kirakira.mp4" poster="images/tooma-kirakira.png" autoplay
+          muted loop playsinline width="84" height="84" aria-hidden="true"></video>
+        <p class="empathy-row__text">川が近すぎて、顔に風が届く迫力。それでいて、ゆったり過ごせる規模感。</p>
+      </div>
+
+      <!-- reveal-in: 画面に入ったら、3枚が時間差でふわっと表示される -->
+      <div class="stat-grid">
+        <div class="stat-card reveal-in" style="animation-delay:0s">
+          <div class="stat-card__num">近場</div>
+          <div class="stat-card__label">ちょうどいい規模感</div>
+        </div>
+        <div class="stat-card reveal-in" style="animation-delay:.15s">
+          <div class="stat-card__num">ゆったり</div>
+          <div class="stat-card__label">混雑が激しくない</div>
+        </div>
+        <div class="stat-card reveal-in" style="animation-delay:.3s">
+          <div class="stat-card__num">徒歩10分</div>
+          <div class="stat-card__label">駅から歩ける距離</div>
+        </div>
+      </div>
+
+      <!-- 動画：poster に静止画を指定しておくと、読み込み中/再生前にその画像が表示されます。
+           loop を付けているので、最後まで再生すると自動的に最初から繰り返します -->
+      <div class="video-box">
+        <video id="solution-video" src="videos/solution-video.mp4" poster="images/video-poster.jpg" controls loop
+          playsinline></video>
+        <div id="solution-video-playhint" class="video-box__playhint">
+          <div class="video-box__playhint-circle">
+            <div class="video-box__playhint-triangle"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ④ 来場シーン紹介（モデルコース） ============ -->
+    <section class="section section--light">
+      <h2 class="section__title">当日のふらっとした一日</h2>
+
+      <div class="scroll-row">
+        <article class="scene-card">
+          <div class="scene-card__photo" style="background-image:url('images/scene-tabearuki.jpg');"></div>
+          <div class="scene-card__body">
+            <img src="images/tooma-mogumogu.png" alt="モグモグするとおま" class="scene-card__icon" width="40" height="40"
+              loading="lazy">
+            <p>夕方に着いて、商店街で食べ歩き。気づいたらもう花火の時間。</p>
+          </div>
+        </article>
+        <article class="scene-card">
+          <div class="scene-card__photo" style="background-image:url('images/scene-hanabi.jpg');"></div>
+          <div class="scene-card__body">
+            <img src="images/tooma-kandou.png" alt="感動するとおま" class="scene-card__icon" width="40" height="40"
+              loading="lazy">
+            <p>顔に風が届くくらいの迫力。それでもすぐ電車に乗れる。</p>
+          </div>
+        </article>
+        <article class="scene-card">
+          <div class="scene-card__photo" style="background-image:url('images/scene-shukuhaku.jpg');"></div>
+          <div class="scene-card__body">
+            <img src="images/tooma-nekorobu.png" alt="寝転ぶとおま" class="scene-card__icon" width="40" height="40"
+              loading="lazy">
+            <p>急いで帰らなくていい。小さくて可愛いお宿で、明日もゆっくり。</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ ⑤ イベント情報・観覧席 ============ -->
+    <section id="event" class="section section--dark section--round-top">
+      <h2 class="section__title section__title--on-dark">とおまち夏花火ナイト</h2>
+      <p class="section__sub">8月中旬の土曜／とおまち川河川敷／入場無料<br>小雨決行・荒天時は翌日延期の可能性あり</p>
+
+      <div class="ticket-card">
+        <img src="images/tooma-matte.png" alt="待って、のとおま" class="ticket-card__icon" width="60" height="60"
+          loading="lazy">
+        <div>
+          <p class="ticket-card__title">有料観覧席 ¥1,500（税込）</p>
+          <p class="ticket-card__desc">先着の事前予約制。ゆったり座って見たい人におすすめ。前日17時までキャンセル無料。</p>
+        </div>
+      </div>
+
+      <!-- ポップアップの予約フォームを開くボタン（js-open-reservation）に変更済み -->
+      <a href="#" class="btn btn--primary btn--block js-open-reservation">席を予約しておく</a>
+      <p class="btn-microcopy">前日17時まで無料キャンセルOK・入力1分</p>
+    </section>
+
+    <!-- ============ ⑥ ベネフィット ============ -->
+    <section class="section section--light section--center">
+      <video class="float-icon" src="videos/tooma-wink.mp4" poster="images/tooma-wink.png" autoplay muted loop
+        playsinline width="100" height="100" aria-hidden="true"></video>
+      <h2 class="section__title">懐かしくて、ちょうどいい。</h2>
+      <div class="tag-row">
+        <span class="tag tag--navy">懐かしさ</span>
+        <span class="tag tag--accent">非日常</span>
+        <span class="tag tag--navy">ちょうどいい賑わい</span>
+      </div>
+
+      <!-- P2-6(移動＋拡張): とおまちで過ごす一日の流れを、キャラクターの表情で紹介 -->
+      <!-- reveal-in: 画面に入ったら、上から順に時間差でフェードイン（script.jsのIntersectionObserverで制御） -->
+      <div class="day-flow">
+        <div class="day-flow__step reveal-in" style="animation-delay:0s">
+          <img src="images/tooma-mogumogu.png" alt="モグモグするとおま" class="day-flow__icon" width="56" height="56"
+            loading="lazy">
+          <div class="day-flow__body">
+            <p class="day-flow__time">夕方</p>
+            <p class="day-flow__text">到着して、商店街で食べ歩き</p>
+          </div>
+        </div>
+        <div class="day-flow__step reveal-in" style="animation-delay:.15s">
+          <img src="images/tooma-kirakira.png" alt="キラキラするとおま" class="day-flow__icon" width="56" height="56"
+            loading="lazy">
+          <div class="day-flow__body">
+            <p class="day-flow__time">夜</p>
+            <p class="day-flow__text">顔に風が届く花火に感動</p>
+          </div>
+        </div>
+        <div class="day-flow__step reveal-in" style="animation-delay:.3s">
+          <img src="images/tooma-nekorobu.png" alt="寝転ぶとおま" class="day-flow__icon" width="56" height="56"
+            loading="lazy">
+          <div class="day-flow__body">
+            <p class="day-flow__time">その夜</p>
+            <p class="day-flow__text">急いで帰らず、小さな宿でゆっくり</p>
+          </div>
+        </div>
+        <div class="day-flow__step reveal-in" style="animation-delay:.45s">
+          <img src="images/tooma-kandou.png" alt="感動するとおま" class="day-flow__icon" width="56" height="56" loading="lazy">
+          <div class="day-flow__body">
+            <p class="day-flow__time">翌日</p>
+            <p class="day-flow__text">帰る前に、もうひとまわり町歩き</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ⑦ 宿泊施設・飲食店 ============ -->
+    <section id="lodging" class="section section--dark section--round-top">
+      <div class="section-heading-row">
+        <img src="images/tooma-tefuru.png" alt="手を振るとおま" class="section-heading-row__icon" width="64" height="64"
+          loading="lazy">
+        <h2 class="section-heading-row__title">町内の宿・ごはん</h2>
+      </div>
+
+      <p class="label label--accent">MAP — とおまち町内</p>
+      <div class="map-box" style="background-image:url('images/map-machi.jpg');"></div>
+      <!-- TODO: href を実際の会場のGoogleマップURLに差し替えてください（今は「とおまち駅」の仮リンクです） -->
+      <a href="https://www.google.com/maps?q=とおまち駅" target="_blank" rel="noopener" class="map-embed__link">Googleマップで開く
+        ↗</a>
+
+      <p class="label label--accent">宿泊 — LINEで空室・プラン相談</p>
+      <div class="scroll-row">
+        <article class="lodging-card">
+          <div class="lodging-card__photo" style="background-image:url('images/lodging-1.jpg');"></div>
+          <div class="lodging-card__body">
+            <p class="lodging-card__title">和風旅館タイプ</p>
+            <p class="lodging-card__desc">町の歴史を感じる、落ち着いた雰囲気。1泊2食付き ¥9,000台〜</p>
+          </div>
+        </article>
+        <article class="lodging-card">
+          <div class="lodging-card__photo" style="background-image:url('images/lodging-2.jpg');"></div>
+          <div class="lodging-card__body">
+            <p class="lodging-card__title">民宿・ゲストハウス</p>
+            <p class="lodging-card__desc">家族経営の、あたたかみあるリーズナブルな一軒。</p>
+          </div>
+        </article>
+        <article class="lodging-card">
+          <div class="lodging-card__photo" style="background-image:url('images/lodging-3.jpg');"></div>
+          <div class="lodging-card__body">
+            <p class="lodging-card__title">小規模ホテル</p>
+            <p class="lodging-card__desc">駅・会場からアクセス良好。シンプルで快適。</p>
+          </div>
+        </article>
+      </div>
+
+      <p class="label label--accent">飲食店 — 商店街エリアより6軒</p>
+      <div class="food-grid">
+        <div class="food-chip">定食屋</div>
+        <div class="food-chip">寿司・割烹</div>
+        <div class="food-chip">うなぎ・郷土料理</div>
+        <div class="food-chip">洋食屋</div>
+        <div class="food-chip">純喫茶</div>
+        <div class="food-chip">昼カフェ夜バー</div>
+      </div>
+
+      <!-- P2-7: 宿泊に興味がない日帰り層がここで導線を失わないように追加 -->
+      <a href="#" class="btn btn--outline btn--block js-open-reservation">観覧席だけ予約する</a>
+
+      <!-- TODO: href="#" を実際のLINE公式アカウントURLに差し替えてください -->
+      <a href="#" class="btn btn--primary btn--block">気になる宿をLINEで相談する</a>
+      <p class="btn-microcopy btn-microcopy--on-dark">相談だけでも大歓迎・LINEで1分</p>
+    </section>
+
+    <!-- ============ ⑧ 来場者の声 ============ -->
+    <section class="section section--light">
+      <h2 class="section__title">来場者の声</h2>
+      <!-- scroll-row--carousel: このセクションだけPCでもグリッドに変えず、
+           横スクロールの自動スライドのままにする（script.jsの自動スクロール対象） -->
+      <div class="scroll-row scroll-row--carousel">
+        <blockquote class="voice-card">
+          <p class="voice-card__text">「思ったよりゆったり見られて、ふらっと来てよかったです」</p>
+          <cite class="voice-card__who">27歳女性・隣県在住</cite>
+        </blockquote>
+        <blockquote class="voice-card">
+          <p class="voice-card__text">「商店街の出店を見ながら歩くだけでも十分楽しめました」</p>
+          <cite class="voice-card__who">30代男性・カップル来場</cite>
+        </blockquote>
+        <blockquote class="voice-card">
+          <p class="voice-card__text">「駅からすぐで、思っていたより気軽に行けました」</p>
+          <cite class="voice-card__who">33歳女性・友人グループ</cite>
+        </blockquote>
+        <blockquote class="voice-card">
+          <p class="voice-card__text">「派手さよりゆったりした雰囲気が良く、また来ようと思いました」</p>
+          <cite class="voice-card__who">40代女性・家族来場</cite>
+        </blockquote>
+      </div>
+
+      <!-- P1-3: 社会的証明（声）の直後は最も行動を後押ししやすいタイミングのため、軽量CTAを設置 -->
+      <!-- ポップアップの予約フォームを開くボタン（js-open-reservation）に変更済み -->
+      <a href="#" class="btn btn--primary btn--block js-open-reservation">席を予約しておく</a>
+    </section>
+
+    <!-- ============ ⑨ FAQ ============ -->
+    <section class="section section--light">
+      <h2 class="section__title">よくある質問</h2>
+      <div class="faq-list">
+        <details class="faq">
+          <summary>予約は必須？</summary>
+          <div class="faq__panel">
+            <p>日帰り観覧は不要です。ゆったり座りたい場合は有料観覧席の予約がおすすめです。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>アクセス方法は？</summary>
+          <div class="faq__panel">
+            <p>最寄駅から徒歩約10分。当日は周辺道路が混雑するため、車での来場は非推奨です。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>雨天の場合は？</summary>
+          <div class="faq__panel">
+            <p>小雨決行。荒天時は翌日に延期する可能性があります。最新情報は当日公式LINEで案内します。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>子供連れでも楽しめる？</summary>
+          <div class="faq__panel">
+            <p>はい。混雑が激しくない規模感で、家族連れの方も多く来場されています。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>宿泊先の決め方は？</summary>
+          <div class="faq__panel">
+            <p>LP内でご紹介の施設から、公式LINEでご相談ください。空室・プランはスタッフが個別にご案内します。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>観覧席のキャンセルは？</summary>
+          <div class="faq__panel">
+            <p>前日17時まで無料でキャンセルいただけます。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>混雑度は？</summary>
+          <div class="faq__panel">
+            <p>都市部の大規模大会に比べると穏やかです。ゆったり過ごしたい方向けの規模感です。</p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>屋台・食事は？</summary>
+          <div class="faq__panel">
+            <p>商店街エリアに多数の出店があります。食べ歩きグルメも楽しみの一つです。</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ ⑩ CTA（最終） ============ -->
+    <section class="section section--cta section--round-top"
+      style="background-image:linear-gradient(180deg,#1B2A4A,rgba(27,42,74,.85) 40%,rgba(27,42,74,.6)),url('images/bg-cta.jpg');">
+      <!-- 動画に対応していない/読み込み前は poster の画像（元の静止画）が表示されます。
+           autoplay+muted+loop+playsinline は「音無しで自動ループ再生する装飾動画」の定番の組み合わせです -->
+      <video class="float-icon" src="videos/tooma-sumaho.mp4" poster="images/tooma-sumaho.png" autoplay muted loop
+        playsinline width="100" height="100" aria-hidden="true"></video>
+      <h2 class="cta-title">今年の夏、これにしない？</h2>
+      <p class="cta-sub">観覧席は先着順。気になったら、のぞくだけのぞいてみて。</p>
+
+      <div class="cta-buttons">
+        <div>
+          <!-- ポップアップの予約フォームを開くボタン（js-open-reservation）に変更済み -->
+          <a href="#" class="btn btn--primary btn--block btn--pulse js-open-reservation">席を予約しておく</a>
+          <p class="btn-microcopy btn-microcopy--on-dark">前日17時まで無料キャンセルOK</p>
+        </div>
+        <div>
+          <!-- TODO: href="#" を実際のLINE公式アカウントURLに差し替えてください -->
+          <a href="#" class="btn btn--outline btn--block">LINEで宿を相談する</a>
+          <p class="btn-microcopy btn-microcopy--on-dark">相談だけでも大歓迎・LINEで1分</p>
+        </div>
+      </div>
+
+      <p class="footer-note">
+        最寄り駅：とおまち駅（徒歩約10分）／会場：とおまち川河川敷<br>
+        駐車場：台数限定のため公共交通機関を推奨<br>
+        販売主体：とおまち観光協会（〒999-0000 とおまち市本町1-1）<br>
+        お問い合わせ：info@toomachi-kanko.jp
+      </p>
+    </section>
+
+  </div><!-- /.lp-frame -->
+
+  <!-- P1-2: スクロール中ずっと表示される固定フッターCTA。
+       FVが画面内にある間は（FV自身のボタンと重複するため）script.jsで非表示にしています。
+       広いPC画面（1600px以上）では、右側の余白部分に縦型パネルとして表示されます -->
+  <div id="sticky-cta" class="sticky-cta">
+    <div class="sticky-cta__item">
+      <!-- ポップアップの予約フォームを開くボタン（js-open-reservation）に変更済み -->
+      <!-- data-short: 中サイズPC画面で丸ボタンにする時に、この短いラベルを表示する -->
+      <a href="#" class="btn btn--primary js-open-reservation" data-short="観覧席&#10;予約">観覧席を予約する</a>
+      <p class="sticky-cta__note">前日17時まで無料キャンセルOK</p>
+    </div>
+    <div class="sticky-cta__item">
+      <!-- TODO: href="#" を実際のLINE公式アカウントURLに差し替えてください -->
+      <a href="#" class="btn btn--outline" data-short="LINEで&#10;相談">LINEで宿を相談</a>
+      <p class="sticky-cta__note">相談だけでも大歓迎・LINEで1分</p>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       観覧席予約のポップアップフォーム
+       <dialog> はブラウザ標準のモーダル用タグで、showModal()で開くと
+       自動で背景を暗くし、ESCキーでも閉じられるようになります。
+       TODO: 現時点では見た目のみで送信先が未設定です。
+       実際に送信できるようにするには、<form>のaction属性に
+       送信先（Googleフォーム／Formspreeなどのフォーム送信サービス／
+       自前のAPIサーバーなど）のURLを設定し、script.js内の
+       送信処理（fetchの部分）もあわせて調整してください。 -->
+  <dialog id="reservation-modal" class="reservation-modal">
+    <form method="dialog" class="reservation-modal__form" id="reservation-form">
+      <button type="button" class="reservation-modal__close" aria-label="閉じる" data-close-modal>×</button>
+
+      <h2 class="reservation-modal__title">観覧席を予約する</h2>
+      <p class="reservation-modal__desc">
+        とおまち夏花火ナイト｜8月中旬の土曜開催<br>
+        有料観覧席 ¥1,500（税込）／前日17時まで無料キャンセル可
+      </p>
+
+      <label class="reservation-modal__label" for="res-name">お名前<span
+          class="reservation-modal__required">必須</span></label>
+      <input type="text" id="res-name" name="name" class="reservation-modal__input" required autocomplete="name">
+
+      <label class="reservation-modal__label" for="res-email">メールアドレス<span
+          class="reservation-modal__required">必須</span></label>
+      <input type="email" id="res-email" name="email" class="reservation-modal__input" required autocomplete="email">
+
+      <label class="reservation-modal__label" for="res-tel">電話番号</label>
+      <input type="tel" id="res-tel" name="tel" class="reservation-modal__input" autocomplete="tel">
+
+      <label class="reservation-modal__label" for="res-count">人数<span
+          class="reservation-modal__required">必須</span></label>
+      <select id="res-count" name="count" class="reservation-modal__input" required>
+        <option value="">選択してください</option>
+        <option value="1">1名</option>
+        <option value="2">2名</option>
+        <option value="3">3名</option>
+        <option value="4">4名</option>
+        <option value="5">5名以上</option>
+      </select>
+
+      <label class="reservation-modal__label" for="res-note">備考（任意）</label>
+      <textarea id="res-note" name="note" class="reservation-modal__input reservation-modal__textarea"
+        rows="3"></textarea>
+
+      <button type="submit" class="btn btn--primary btn--block">この内容で予約する</button>
+      <p class="reservation-modal__note">送信後、担当より確認のご連絡をいたします。</p>
+
+      <!-- 送信完了後にJSで表示するメッセージ（最初は非表示） -->
+      <div class="reservation-modal__success" hidden>
+        <p>ご予約ありがとうございます！<br>内容を確認のうえ、追ってご連絡いたします。</p>
+        <button type="button" class="btn btn--outline btn--block" data-close-modal>閉じる</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================================================
+       チャットボット UI (段階1)
+       ============================================================ -->
+  <div id="chatbot" class="chatbot">
+
+    <!-- 丸型トリガーボタン(右下固定) -->
+    <button
+      type="button"
+      id="chatbot-trigger"
+      class="chatbot__trigger"
+      aria-expanded="false"
+      aria-controls="chatbot-window"
+      aria-label="チャットを開く"
+    >
+      <span class="chatbot__trigger-icon chatbot__trigger-icon--chat" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+      </span>
+      <span class="chatbot__trigger-icon chatbot__trigger-icon--close" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </span>
+    </button>
+
+    <!-- チャットウィンドウ本体(初期状態は非表示、JSで開閉) -->
+    <div id="chatbot-window" class="chatbot__window" role="dialog" aria-label="チャットウィンドウ" aria-hidden="true">
+
+      <header class="chatbot__header">
+        <div>
+          <p class="chatbot__header-title">とおまちAIアシスタント</p>
+          <p class="chatbot__header-status">花火ナイトについて質問できます</p>
+        </div>
+        <button type="button" id="chatbot-close" class="chatbot__close" aria-label="チャットを閉じる">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <div id="chatbot-log" class="chatbot__log" aria-live="polite">
+        <!-- 最初から1件、案内メッセージを入れておく -->
+        <div class="chatbot__bubble chatbot__bubble--bot">
+          こんにちは!とおまち夏花火ナイトについて、料金・営業時間・アクセスなどお気軽にご質問ください。
+        </div>
+      </div>
+
+      <form id="chatbot-form" class="chatbot__form">
+        <input
+          type="text"
+          id="chatbot-input"
+          class="chatbot__input"
+          placeholder="質問を入力..."
+          autocomplete="off"
+          aria-label="メッセージを入力"
+        >
+        <button type="submit" class="chatbot__send" aria-label="送信">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="chatbot.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,314 @@
+/* ============================================================
+   チャットボット UI (段階1: 見た目と開閉アニメーションのみ)
+   ------------------------------------------------------------
+   ・色やフォントは style.css の :root で定義済みの変数
+     (--color-navy / --color-accent / --font-heading 等) を
+     そのまま流用しています。LP側で配色を変更すれば、
+     このチャットボットにも自動で反映されます。
+   ・このファイルは <link rel="stylesheet" href="style.css"> の
+     "あと" に読み込んでください(変数を使うため)。
+   ============================================================ */
+
+/* ---- チャットボット専用の設定値 ----------------------------
+   既存の右下固定フッター(.sticky-cta)と重ならないように、
+   ボタン/ウィンドウの「下からの距離」をブレークポイントごとに
+   分けて計算しています(数値の根拠はコメント参照)。
+--------------------------------------------------------------- */
+:root {
+  /* トリガーボタンの直径 */
+  --chat-trigger-size: 60px;
+  /* ボタンとウィンドウの間の余白 */
+  --chat-gap: 16px;
+  /* 右端からの距離(スマホ) */
+  --chat-right: 16px;
+
+  /* スマホ(〜1023px): .sticky-cta は画面下部の横長バー。
+     バー本体の高さ(パディング+ボタン+注釈文)がおよそ90px前後
+     になるため、その上に少し余白を足した位置にトリガーを置く。
+     ※実機で.sticky-ctaが表示された状態を確認し、
+       重なる場合はここの数値を調整してください。 */
+  --chat-safe-bottom: 100px;
+}
+
+@media (min-width: 481px) {
+  :root {
+    --chat-right: 24px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1599px) {
+  /* この幅では .sticky-cta が「右下の丸カード」に変形する
+     (right:24px, bottom:24px, 68pxの丸ボタン2個 縦積み,
+      padding 20px, ボタン間 gap 18px)
+     → カードの高さ ≒ 20+68+18+68+20 = 194px
+     → カード上端 = bottom24px + 194px = 218px
+     → チャットボタンはさらに余白を足して 234px の位置に配置 */
+  :root {
+    --chat-safe-bottom: 234px;
+  }
+}
+
+@media (min-width: 1600px) {
+  /* この幅では .sticky-cta が「右側の縦長ミニパネル」になる
+     (right:28px, bottom:28px, 幅220px, padding 20px, gap14px)
+     → パネルの高さ ≒ 目安154px
+     → パネル上端 = bottom28px + 154px = 182px
+     → チャットボタンは 194px 付近に配置して余白を確保 */
+  :root {
+    --chat-safe-bottom: 194px;
+  }
+}
+
+/* ---- 全体のコンテナ ------------------------------------------ */
+.chatbot {
+  /* 中の要素(トリガー・ウィンドウ)はそれぞれ独自に fixed 配置するので
+     このラッパー自体に見た目のスタイルは不要 */
+  position: relative;
+  z-index: 200; /* .sticky-cta の z-index:100 より必ず上に表示する */
+}
+
+/* ---- トリガーボタン(丸型・右下固定) --------------------------- */
+.chatbot__trigger {
+  position: fixed;
+  right: var(--chat-right);
+  bottom: var(--chat-safe-bottom);
+  width: var(--chat-trigger-size);
+  height: var(--chat-trigger-size);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: var(--color-cream);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); /* 既存ボタンの影と揃える */
+  z-index: 200;
+
+  /* ボタン自体の押下フィードバック(既存.btnのホバー挙動に合わせる) */
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.chatbot__trigger:hover {
+  background: #d5572f; /* 既存 .btn--primary:hover と同じ色 */
+}
+
+.chatbot__trigger:active {
+  transform: scale(0.93);
+}
+
+/* アイコンの重ね合わせ:
+   「吹き出し」と「✕」を同じ位置に重ねておき、
+   開閉状態に応じて opacity と回転で入れ替える */
+.chatbot__trigger-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.chatbot__trigger-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.chatbot__trigger-icon--close {
+  opacity: 0;
+  transform: rotate(-45deg);
+}
+
+/* JSが <button> に is-open クラスを付け外しして状態を切り替える */
+.chatbot__trigger.is-open .chatbot__trigger-icon--chat {
+  opacity: 0;
+  transform: rotate(45deg);
+}
+
+.chatbot__trigger.is-open .chatbot__trigger-icon--close {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+/* ---- チャットウィンドウ本体 ----------------------------------- */
+.chatbot__window {
+  position: fixed;
+  right: var(--chat-right);
+  bottom: calc(var(--chat-safe-bottom) + var(--chat-trigger-size) + var(--chat-gap));
+  width: min(360px, calc(100vw - (var(--chat-right) * 2)));
+  max-height: min(520px, 65vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-cream);
+  border-radius: 20px; /* 既存カードの角丸(20px)に合わせる */
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3); /* 既存パネルの影と揃える */
+  z-index: 199;
+
+  /* ---- 開閉アニメーション本体 ----
+     右下を起点(transform-origin)に、拡大縮小+フェード+
+     少し下からせり上がる動きを付ける。
+     0.25s ease は既存の .sticky-cta の表示切り替えと同じ秒数。 */
+  transform-origin: bottom right;
+  transform: scale(0.85) translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.chatbot__window.is-open {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* スマホの小さい画面では、入力しやすいよう少し縦に大きく確保 */
+@media (max-width: 480px) {
+  .chatbot__window {
+    width: calc(100vw - 32px);
+    max-height: min(70vh, 560px);
+  }
+}
+
+/* ---- ヘッダー ------------------------------------------------- */
+.chatbot__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--color-navy);
+  color: var(--color-cream);
+  flex-shrink: 0;
+}
+
+.chatbot__header-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.chatbot__header-status {
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  opacity: 0.75;
+}
+
+.chatbot__close {
+  border: none;
+  background: transparent;
+  color: var(--color-cream);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.chatbot__close:hover {
+  background: rgba(255, 246, 229, 0.15);
+}
+
+.chatbot__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---- 会話ログ ---------------------------------------------- */
+.chatbot__log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-canvas);
+  font-family: var(--font-body);
+}
+
+.chatbot__bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 16px; /* 既存の「中程度のカード」角丸に合わせる */
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ボットの発言: 左寄せ・白背景 */
+.chatbot__bubble--bot {
+  align-self: flex-start;
+  background: #ffffff;
+  color: var(--color-text);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 4px rgba(27, 42, 74, 0.08);
+}
+
+/* ユーザーの発言: 右寄せ・アクセントカラー */
+.chatbot__bubble--user {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: var(--color-cream);
+  border-bottom-right-radius: 4px;
+}
+
+/* ---- 入力フォーム -------------------------------------------- */
+.chatbot__form {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-cream);
+  border-top: 1px solid rgba(27, 42, 74, 0.1);
+  flex-shrink: 0;
+}
+
+.chatbot__input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: 999px; /* 既存ボタンと同じピル型 */
+  border: 1.5px solid rgba(27, 42, 74, 0.15);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.chatbot__input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.chatbot__send {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-navy);
+  color: var(--color-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.chatbot__send:hover {
+  opacity: 0.9;
+}
+
+.chatbot__send:active {
+  transform: scale(0.93);
+}
+
+.chatbot__send svg {
+  width: 16px;
+  height: 16px;
+}

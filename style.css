@@ -1,0 +1,1687 @@
+/* ==========================================================
+   とおまち夏花火ナイト LP スタイルシート
+   スマホファースト：まずスマホ表示を基準に書き、
+   画面が広くなるほど @media (min-width: ...) で調整を足していきます
+========================================================== */
+
+/* ---- 共通リセット ---- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* padding を含めてサイズ計算するので、幅がズレにくくなります */
+}
+
+/* ---- ブランドカラー・共通変数 ----
+   :root に色をまとめておくと、あとで色を変えたいときに
+   ここ1箇所を直すだけで全体に反映されます */
+:root {
+  --color-navy: #1B2A4A;
+  /* 夜空の紺（Primary） */
+  --color-cream: #FFF6E5;
+  /* 提灯のあたたかい白（Secondary） */
+  --color-accent: #E8633C;
+  /* 花火・夜店の赤橙（Accent） */
+  --color-text: #333333;
+  /* 本文 */
+  --color-canvas: #EFEAE0;
+  /* カードの外側（PC表示時の背景） */
+  --font-heading: 'Zen Maru Gothic', sans-serif;
+  --font-body: 'Noto Sans JP', sans-serif;
+}
+
+/* サイト全体の文字が小さいという指摘への対応。
+   remは「html要素の文字サイズ」からの倍率で決まる単位なので、
+   （bodyではなく）ここhtmlに指定する必要があります。
+   前回はbodyに指定してしまっていたため、remを使っている各セクションの
+   文字サイズには反映されていませんでした */
+html {
+  font-size: 118%;
+}
+
+body {
+  background: var(--color-canvas);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* カード（.lp-frame）が画面幅いっぱいにならない481px以上の画面で、
+   左右に見える余白部分に壁紙を敷く。
+   background-attachment:fixed にすることで、コンテンツ側だけがスクロールし、
+   壁紙自体はその場に固定されたまま（＝壁紙の上をスクロールしていくように）見せられます。
+   スマホ（480px以下）はカードが画面いっぱいで余白が無いため、
+   画像を読み込まずに済むよう481px以上だけに限定しています */
+@media (min-width: 481px) {
+  body {
+    /* 画像の上に半透明のクリーム色を重ねることで、色味を薄く・落ち着かせています。
+       重ねる色を薄くしたい/濃くしたい場合は rgba(...) の最後の数値（0〜1）を調整してください */
+    background-image: linear-gradient(rgba(255, 246, 229, 0.72), rgba(255, 246, 229, 0.72)), url('images/bg-wallpaper.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* ==========================================================
+   全体を包むフレーム
+   スマホでは画面いっぱい、PC / タブレットでは中央に
+   スマホサイズのカードとして表示させます
+========================================================== */
+.lp-frame {
+  width: 100%;
+  max-width: 480px;
+  /* この幅を超える画面ではカード状に中央寄せ */
+  margin: 0 auto;
+  background: var(--color-cream);
+  overflow: hidden;
+  position: relative;
+}
+
+@media (min-width: 481px) {
+  .lp-frame {
+    margin-top: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.12);
+    border-radius: 20px;
+  }
+}
+
+/* ==========================================================
+   ① ファーストビュー（FV）
+========================================================== */
+.fv {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 24px 46px;
+  /* background-size / background-position は動画では使わないので削除してOK */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* 追加：背景動画を画面いっぱいに敷くための指定
+   ※動画を2本重ねて配置し、opacityの切り替えでクロスフェードさせるため、
+   両方とも同じ位置（position:absolute; inset:0）にぴったり重なるようにしています */
+.fv__bg-video {
+  position: absolute;
+  inset: 0;
+  /* top:0; right:0; bottom:0; left:0; の省略形 */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 画像のbackground-size:coverと同じ役割。
+                             動画の縦横比を保ったまま、はみ出た部分を切り取って
+                             要素いっぱいに敷き詰めます */
+  z-index: 0;
+  /* 一番背面に固定 */
+  opacity: 0;
+  /* 初期状態は透明＝非表示。表示する側だけ.is-activeを付けてopacity:1にします */
+  transition: opacity 1.2s ease;
+  /* opacityが変化するときに1.2秒かけてふわっと変化させる＝これがクロスフェードの正体 */
+}
+
+/* 今表示すべき動画にだけJSでこのクラスを付け外しします */
+.fv__bg-video.is-active {
+  opacity: 1;
+  z-index: 1;
+  /* is-active側を手前に出しておくことで、切り替え中に一瞬どちらも
+     透けて見えるときの重なり順もきれいに保たれます */
+}
+
+.fv__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  /* 動画（z-index:0/1）より必ず手前に来るように指定。
+     これがないと、動画が暗幕(overlay)やタイトル文字より
+     前面に出てしまい、文字が隠れてしまいます */
+  background: linear-gradient(180deg,
+      rgba(27, 42, 74, 0.65) 0%,
+      rgba(27, 42, 74, 0.25) 45%,
+      rgba(27, 42, 74, 0.15) 65%,
+      rgba(27, 42, 74, 0.75) 100%);
+}
+
+.fv__inner {
+  position: relative;
+  width: 100%;
+  z-index: 3;
+  /* overlay(2)よりさらに手前＝一番手前に文字を表示させる */
+  transition: opacity 0.5s ease;
+  /* 動画切り替えに合わせて、文字もopacityでふわっと変化させます */
+  margin-top: 30px;
+}
+
+/* 動画が切り替わる瞬間、script.jsが一時的にこのクラスを付けて文字を透明にし、
+   中身（kicker/title/lead）を差し替えてからクラスを外して再度表示させます */
+.fv__inner.is-fading {
+  opacity: 0;
+}
+
+/* ボタン＋統計行を、写真の下端にぴったり固定する。
+   .fv に position:relative があるので、ここでの absolute は .fv 基準になります */
+.fv__bottom {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 46px;
+  z-index: 3;
+  /* overlay(2)よりさらに手前＝ボタンや統計行を一番手前に表示させる */
+}
+
+.fv__kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--color-cream);
+  opacity: 0.85;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  margin-bottom: 14px;
+}
+
+.fv__title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 2.4rem;
+  /* 元は40pxですが、画面幅が狭い端末でも折り返さないよう少し抑えています */
+  line-height: 1.4;
+  color: var(--color-cream);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+  margin-top: 30px;
+  margin-bottom: 10px;
+  text-wrap: balance;
+  /* 見出しが複数行になるとき、各行の文字数のバランスを自動で整えて
+     「最後の行だけ1文字」のような不格好な折り返しを防いでくれるCSSです。
+     <br>で指定した改行位置は尊重しつつ、その中でさらに折り返しが必要な
+     場合だけバランス調整してくれます */
+}
+
+.fv__title-accent {
+  color: #ffb199;
+}
+
+/* 「迫力を。」「する夏。」のように、末尾の数文字を1つの塊として扱い、
+   途中で改行されないようにするためのクラス。
+   text-wrap:balance が効かない古いブラウザ環境でも、
+   「を。」だけが1文字で次の行に飛び出す事態を防ぐ保険です */
+.fv__title-nowrap {
+  white-space: nowrap;
+}
+
+.fv__lead {
+  font-size: 0.62rem;
+  /* 0.85rem→0.72remに縮小。スマホでガラス板が大きくなりすぎて
+     キャラクターを隠してしまわないようにするための調整 */
+  line-height: 1.6;
+  color: var(--color-cream);
+  opacity: 0.95;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  margin-bottom: 18px;
+  /* 20px→14px。パネル自体の高さも合わせて詰める */
+
+  /* ---- ここから追加：ネイビーの半透明すりガラスパネル ---- */
+  display: inline-block;
+  /* pタグは本来ブロック要素で横幅いっぱいに伸びますが、
+     inline-blockにすることで「中の文字の横幅ぴったり」の
+     バッジ（ガラス板）として見せられます */
+  padding: 5px 10px;
+  /* 10px 16px→7px 12px。文字サイズを縮小した分、余白も比例して縮小 */
+  border-radius: 10px;
+  background: rgba(27, 42, 74, 0.45);
+  /* var(--color-navy)の値(#1B2A4A)をrgbaで半透明に。数値を上げるほど濃く不透明になります */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* backdrop-filter：背後に映っているもの（今回は動画）自体をぼかす、
+     すりガラスの本体はこちらです。Safari対応のため-webkit-も併記します */
+}
+
+.fv__ctas {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+/* P2-8: 「観覧席を予約する」を主導線として少し大きく見せる（LINE相談は残しつつ強弱をつける） */
+.fv__ctas .btn--primary {
+  flex: 1.4;
+}
+
+.fv__stats {
+  display: flex;
+  justify-content: center;
+  /* space-around → center：後述のwidth:fit-contentと組み合わせ、
+     3項目をまとめた1枚のバッジとして中央に置くための変更 */
+  gap: 12px;
+  /* 18px→12pxで、パネル全体の横幅も少しコンパクトに */
+  width: fit-content;
+  /* 中身（3項目）の実際の幅ぴったりにする＝バッジらしい見た目に */
+  margin: 10px auto 0;
+  /* 左右autoで.fv__bottom内の中央に配置。上にも少し余白を確保 */
+  font-size: 0.68rem;
+  /* 0.65rem→0.58rem */
+  color: var(--color-cream);
+  opacity: 0.9;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+  flex-wrap: wrap;
+
+  /* ---- ここから追加：ネイビーの半透明すりガラスパネル ---- */
+  padding: 8px 14px;
+  /* 12px 22px→8px 14px */
+  border-radius: 999px;
+  /* 999pxのように十分大きい値にすると、角がすべて丸まって
+     「ピル（カプセル）形状」のバッジになります */
+  background: rgba(27, 42, 74, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ==========================================================
+   ボタン共通パーツ（.btn）
+   色違い・幅違いは修飾クラス（--primary, --outline, --block）で切り替えます
+========================================================== */
+.btn {
+  display: inline-block;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 14px 8px;
+  border-radius: 999px;
+  flex: 1;
+  border: 1.5px solid transparent;
+  /* <button>要素にも同じクラスを使うため、ブラウザ標準の見た目をリセットする */
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  /* スマホでタップした時に、丸ボタンなのに四角くハイライトが光る現象を防ぐ */
+  -webkit-tap-highlight-color: transparent;
+  /* hover/active時の変化を滑らかにする */
+  transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
+}
+
+/* 押した瞬間（スマホのタップ・PCのクリック両方）に少し縮んで押した感を出す */
+.btn:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* キーボード操作（Tabキー）でボタンにフォーカスした時にわかるようにする（アクセシビリティ対応） */
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* @media(hover:hover) は「マウスでの操作ができる環境」だけに絞る指定です。
+   これが無いと、スマホでボタンをタップした後に指を離しても
+   hoverの見た目が少し残ってしまうことがあります */
+@media (hover: hover) {
+  .btn--primary:hover {
+    background: #d5572f;
+    /* accentより少し濃いめ */
+  }
+
+  .btn--outline:hover {
+    background: rgba(255, 246, 229, 0.12);
+  }
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: var(--color-cream);
+}
+
+.btn--outline {
+  background: transparent;
+  color: var(--color-cream);
+  border-color: var(--color-cream);
+}
+
+.btn--block {
+  display: block;
+  width: 100%;
+}
+
+/* P2-7: ブロックボタンを連続で並べたときに、隙間が無くくっつかないようにする */
+.btn--block+.btn--block {
+  margin-top: 10px;
+}
+
+/* CTAセクション最後のボタンをふわっと目立たせる（脈打つような動き） */
+@keyframes ctaPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(232, 99, 60, 0.55);
+  }
+
+  50% {
+    transform: scale(1.035);
+    box-shadow: 0 0 0 10px rgba(232, 99, 60, 0);
+  }
+}
+
+.btn--pulse {
+  animation: ctaPulse 2.2s ease-in-out infinite;
+}
+
+/* ==========================================================
+   セクション共通レイアウト
+========================================================== */
+.section {
+  padding: 36px 28px 24px;
+  position: relative;
+}
+
+.section--light {
+  background: var(--color-cream);
+}
+
+.section--dark {
+  background: var(--color-navy);
+  padding: 48px 24px 36px;
+}
+
+/* セクションの上端を丸くくり抜いて、前のセクションに乗っかっているように見せる装飾 */
+.section--round-top {
+  border-radius: 40px 40px 0 0;
+}
+
+.section--center {
+  text-align: center;
+}
+
+.section__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--color-navy);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.section__title--on-dark {
+  color: var(--color-cream);
+  margin-bottom: 6px;
+}
+
+.section__sub {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-cream);
+  opacity: 0.8;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.section-heading-row__icon {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.section-heading-row__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--color-cream);
+}
+
+.label {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+}
+
+.label--accent {
+  color: var(--color-accent);
+  margin-top: 14px;
+}
+
+/* ==========================================================
+   ② 悩み・あるある / ③ 解決　共通：とおま＋一言 の並び
+========================================================== */
+.empathy-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.empathy-row--reverse {
+  flex-direction: row-reverse;
+}
+
+.empathy-row__icon {
+  width: 84px;
+  flex-shrink: 0;
+}
+
+.empathy-row__text {
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+/* 吹き出し付きの写真カード */
+.bubble-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 306 / 280;
+  /* 元デザインの比率のまま、幅が変わっても縦長写真の見え方を保つ */
+  margin-bottom: 22px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+}
+
+.bubble-card__inner {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 16px 80px;
+}
+
+.bubble {
+  position: relative;
+  /* 追加：この後の吹き出しの三角(::after)を、この箱基準で配置するために必要 */
+  background: var(--color-cream);
+  /* #fff → ベージュ（提灯色の白）に変更 */
+  color: var(--color-navy);
+  /* 追加：文字色をネイビーに */
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  box-shadow: 0 1px 4px rgba(27, 42, 74, 0.08);
+  max-width: 95%;
+}
+
+/* 吹き出しの「しっぽ」（三角）を作る仕組み：
+   widthとheightを0にした要素にborder（枠線）だけを付けると、
+   枠線同士が斜めにぶつかる部分が三角形に見える、というCSSの定番テクニックです。
+   4辺のうち色を付けた1辺だけが三角として見え、残り3辺は透明にして消しています */
+.bubble::after {
+  content: "";
+  /* ::after疑似要素の表示にはcontentが必須（空文字でOK） */
+  position: absolute;
+  bottom: -8px;
+  /* 吹き出し本体の下端から少しはみ出させる */
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.bubble--left {
+  align-self: flex-start;
+  margin-left: 6px;
+}
+
+/* 左寄せの吹き出し → しっぽは左下に */
+.bubble--left::after {
+  left: 20px;
+  border-width: 10px 10px 0 0;
+  /* 上10px・右10pxだけ設定→左下向きの三角になる */
+  border-color: var(--color-cream) transparent transparent transparent;
+}
+
+.bubble--right {
+  align-self: flex-end;
+  margin-right: 6px;
+}
+
+/* 右寄せの吹き出し → しっぽは右下に */
+.bubble--right::after {
+  right: 20px;
+  border-width: 10px 0 0 10px;
+  /* 上10px・左10pxだけ設定→右下向きの三角になる */
+  border-color: var(--color-cream) transparent transparent transparent;
+}
+
+/* 吹き出しが画面に入ったらフワッと表示するアニメーション
+   （script.js の IntersectionObserver が .is-visible クラスを付与します）
+   → 数字カード等と共通のbubbleInより下からの移動距離を大きくして、
+     「下からスライドしてくる」動きがはっきり分かるようにしています */
+.bubble-in {
+  opacity: 0;
+}
+
+.bubble-in.is-visible {
+  animation: bubbleSlideIn 1s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+  /* 0.6s→1sに伸ばして、ゆっくり漂うような「ふわっと」感を強めています。
+     cubic-bezier(0.25, 1, 0.35, 1)：最初はすっと動き出し、最後は
+     ふんわり減速して止まる、柔らかい着地感の緩急です */
+}
+
+@keyframes bubbleSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+    /* 14px→40pxに増やし、スライドしてくる距離をしっかり見せる */
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 汎用の「画面に入ったらフワッと表示」クラス。
+   吹き出し以外の要素（数字カードや一日の流れのステップなど）は
+   従来通り控えめな移動量のbubbleInを使い続けます（見た目の強さを使い分け）。
+   要素に style="animation-delay:.15s" のように付けると、時間差で表示できます */
+.reveal-in {
+  opacity: 0;
+}
+
+.reveal-in.is-visible {
+  animation: bubbleIn 0.6s ease-out forwards;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================
+   ③ 解決：3つのミニ統計カード
+========================================================== */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.stat-card {
+  background: var(--color-navy);
+  /* #fff → ネイビーに変更 */
+  border-radius: 12px;
+  padding: 14px 8px;
+}
+
+.stat-card__num {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--color-accent);
+  /* 数字部分（近場・ゆったり等）はオレンジのままでも
+     ネイビー背景に映えるのでそのままでOK */
+}
+
+.stat-card__label {
+  font-size: 0.65rem;
+  margin-top: 4px;
+  color: var(--color-cream);
+  /* 追加：説明文（黒文字）が見えなくなるため明るい色に変更 */
+}
+
+/* 動画ボックス */
+.video-box {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 306 / 180;
+  /* 元デザインの比率のまま */
+  margin-bottom: 24px;
+  background: #000;
+}
+
+.video-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-box__playhint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  /* 再生ボタンの上に重ねているだけなので、クリックは下の video に通す */
+}
+
+.video-box__playhint-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-box__playhint-triangle {
+  width: 0;
+  height: 0;
+  border-top: 11px solid transparent;
+  border-bottom: 11px solid transparent;
+  border-left: 18px solid #fff;
+  margin-left: 4px;
+}
+
+/* ==========================================================
+   ④ イベント情報・観覧席
+========================================================== */
+.ticket-card {
+  background: var(--color-cream);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.ticket-card__icon {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.ticket-card__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--color-navy);
+}
+
+.ticket-card__desc {
+  font-size: 0.7rem;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* ==========================================================
+   ⑤ 来場シーン / ⑧ 来場者の声 共通：横スクロールカード列
+========================================================== */
+.scroll-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 4px 14px;
+  margin: 0 -4px;
+  scroll-snap-type: x proximity;
+  /* 指を離すとカードの位置でピタッと止まる */
+  -webkit-overflow-scrolling: touch;
+  /* スクロールバーを非表示にする（3セクション共通） */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* 旧Edge / IE */
+}
+
+.scroll-row::-webkit-scrollbar {
+  display: none;
+  /* Chrome / Safari */
+}
+
+.scene-card {
+  flex: 0 0 190px;
+  /* 町内の宿・ごはんセクションのカード(.lodging-card)と同じ幅に統一 */
+  scroll-snap-align: start;
+  background: var(--color-navy);
+  /* #fff → ネイビーに変更 */
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(27, 42, 74, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  /* transform（位置）とbox-shadow（影）の両方をなめらかに変化させる指定。
+     これがないとホバー時に「カクッ」と瞬間移動してしまいます */
+}
+
+.scene-card__photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  /* .lodging-card__photo と同じ比率に統一 */
+  background-size: cover;
+  background-position: center;
+}
+
+.scene-card__body {
+  padding: 12px 14px 16px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--color-cream);
+  /* 追加：テキストが黒のままだと見えなくなるため */
+}
+
+.scene-card__icon {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================
+   ⑥ ベネフィット
+========================================================== */
+.float-icon {
+  width: 100px;
+  margin: 0 auto 8px;
+  object-fit: contain;
+  /* 全身が見切れないよう、箱に収まるサイズに縮小して表示する */
+}
+
+.tag-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.tag {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: var(--color-cream);
+}
+
+.tag--navy {
+  background: var(--color-navy);
+}
+
+.tag--accent {
+  background: var(--color-accent);
+}
+
+/* ==========================================================
+   P2-6: ベネフィットセクション内の「一日の流れ」タイムライン
+========================================================== */
+.day-flow {
+  max-width: 340px;
+  margin: 28px auto 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+  /* 親セクションが text-align:center のため、ここで左寄せに戻す */
+}
+
+.day-flow__step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+/* ステップ同士をつなぐ縦の線（最後のステップ以外に表示） */
+.day-flow__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 27px;
+  /* アイコン(56px)の中央あたり */
+  top: 56px;
+  width: 2px;
+  height: 20px;
+  background: rgba(27, 42, 74, 0.15);
+}
+
+.day-flow__icon {
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.day-flow__time {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.68rem;
+  color: var(--color-accent);
+}
+
+.day-flow__text {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* ==========================================================
+   ⑦ 宿泊施設・飲食店
+========================================================== */
+.map-box {
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  /* イラストマップの縦横比(4:3)に合わせて、左右が切れすぎないようにする */
+  margin-bottom: 12px;
+  background-size: cover;
+  background-position: center;
+}
+
+/* MAP — テキストリンク（実際のGoogleマップを開く） */
+.map-embed__link {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--color-cream);
+  opacity: 0.85;
+  text-decoration: underline;
+  margin-bottom: 26px;
+}
+
+.lodging-card {
+  flex: 0 0 190px;
+  scroll-snap-align: start;
+  background: var(--color-cream);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  /* scene-cardと同じ理由で影を用意（ホバー時に濃くして「浮いた」感を出すため） */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lodging-card__photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  /* 宿泊施設の写真(4:3)に合わせて調整 */
+  background-size: cover;
+  background-position: center;
+}
+
+/* ---- カードホバー時の「フワッと浮き上がる」アニメーション ----
+   (hover: hover) and (pointer: fine)：マウスでホバー操作ができる環境
+   （＝主にPC）だけに適用する書き方です。これを付けないと、
+   スマホ・タブレットでカードをタップした際にも「ホバー状態」が
+   残ってしまい、タップ後も浮いたままになる不具合が起きやすいため、
+   PC限定の指定にしています */
+@media (hover: hover) and (pointer: fine) {
+
+  .scene-card:hover,
+  .lodging-card:hover {
+    transform: translateY(-8px);
+    /* 上方向に8pxだけ移動＝浮き上がって見える */
+    box-shadow: 0 16px 28px rgba(27, 42, 74, 0.22);
+    /* ホバー時は影を大きく・濃くして、浮いた分の距離感を演出 */
+  }
+}
+
+/* 写真が未設定の間だけ使うプレースホルダー見た目。
+   実際の写真を用意したら、HTML側の style="background-image:..." に差し替えて
+   このクラス（lodging-card__photo--placeholder）は外してください */
+.lodging-card__photo--placeholder {
+  background: repeating-linear-gradient(45deg,
+      #e6ded0,
+      #e6ded0 10px,
+      #dcd2bf 10px,
+      #dcd2bf 20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--color-navy);
+  text-align: center;
+  padding: 8px;
+}
+
+.lodging-card__body {
+  padding: 12px 14px 16px;
+}
+
+.lodging-card__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--color-navy);
+}
+
+.lodging-card__desc {
+  font-size: 0.68rem;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.food-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.food-chip {
+  background: var(--color-cream);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.68rem;
+  color: var(--color-navy);
+}
+
+/* ==========================================================
+   ⑧ 来場者の声
+========================================================== */
+.voice-card {
+  flex: 0 0 190px;
+  /* .scene-card / .lodging-card と同じ幅に統一 */
+  scroll-snap-align: start;
+  background: var(--color-navy);
+  /* #fff → ネイビーに変更 */
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(27, 42, 74, 0.08);
+}
+
+.voice-card__text {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-cream);
+  /* 追加：本文（黒文字）が見えなくなるため明るい色に変更 */
+}
+
+.voice-card__who {
+  display: block;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.65rem;
+  color: var(--color-accent);
+  font-style: normal;
+  margin-top: 8px;
+}
+
+/* ==========================================================
+   ⑨ FAQ（アコーディオン）
+========================================================== */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 19px;
+  margin-bottom: 19px;
+}
+
+.faq {
+  background: var(--color-navy);
+  /* #fff → ネイビーに変更 */
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.faq summary {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--color-cream);
+  /* navy → creamに変更（紺の背景に紺文字だと見えなくなるため） */
+  cursor: pointer;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+  /* Safari のデフォルト三角マーカーを消す */
+}
+
+/* FAQの開閉をなめらかにするための仕組み。
+   <details>の開閉自体は一瞬で切り替わってしまうため、
+   中身を .faq__panel で囲み、その max-height を script.js から
+   アニメーションさせることで「スーッと開閉する」動きを実現しています */
+.faq__panel {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease;
+}
+
+.faq p {
+  font-size: 0.72rem;
+  line-height: 1.6;
+  margin-top: 6px;
+  padding-bottom: 2px;
+  color: var(--color-cream);
+  /* 追加：答えの本文も明るい色に変更 */
+}
+
+/* ==========================================================
+   ⑩ CTA（最終セクション）
+========================================================== */
+.section--cta {
+  background-size: cover;
+  background-position: center;
+  text-align: center;
+  padding: 48px 24px 40px;
+}
+
+.cta-title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 1.4rem;
+  line-height: 1.5;
+  color: var(--color-cream);
+  margin-bottom: 6px;
+}
+
+.cta-sub {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-cream);
+  opacity: 0.8;
+  margin-bottom: 22px;
+}
+
+.cta-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.footer-note {
+  border-top: 1px solid rgba(255, 246, 229, 0.2);
+  padding-top: 18px;
+  font-size: 0.65rem;
+  line-height: 1.8;
+  color: var(--color-cream);
+  opacity: 0.6;
+  text-align: left;
+}
+
+/* ==========================================================
+   P1-4: CTAボタン用マイクロコピー（安心材料）
+   明るい背景（section--light）向けがデフォルト、
+   紺色背景（section--dark／CTAセクション）では --on-dark 修飾クラスを併用する
+========================================================== */
+.btn-microcopy {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--color-navy);
+  opacity: 0.6;
+  margin-top: 8px;
+}
+
+.btn-microcopy--on-dark {
+  color: var(--color-cream);
+  opacity: 0.7;
+}
+
+/* ==========================================================
+   P1-2: スクロール追従の固定フッターCTA
+   FVが画面内にある間はscript.jsが .is-visible を外して非表示にする
+========================================================== */
+.sticky-cta {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  /* .lp-frame と同じ幅に揃える */
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-navy);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  pointer-events: none;
+  /* 非表示中は下に隠れたボタンなどを誤タップしないように */
+}
+
+.sticky-cta.is-visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sticky-cta .btn {
+  font-size: 0.8rem;
+  padding: 12px 8px;
+}
+
+/* ボタン+マイクロコピーの組を横並びさせるための入れ物（SP〜通常PC幅） */
+.sticky-cta__item {
+  flex: 1;
+  min-width: 0;
+}
+
+.sticky-cta__item .btn {
+  width: 100%;
+}
+
+.sticky-cta__note {
+  text-align: center;
+  font-size: 0.62rem;
+  color: var(--color-cream);
+  opacity: 0.7;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ==========================================================
+   タブレット以上での微調整（お好みで拡張してください）
+========================================================== */
+@media (min-width: 481px) {
+  .section--round-top:first-of-type {
+    border-radius: 40px 40px 0 0;
+  }
+}
+
+/* ==========================================================
+   観覧席予約のポップアップフォーム（<dialog>）
+========================================================== */
+.reservation-modal {
+  border: none;
+  border-radius: 20px;
+  padding: 0;
+  width: min(90vw, 400px);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--color-cream);
+  color: var(--color-text);
+  /* <dialog>は本来 margin:auto (+ position:absolute; inset:0;) で
+     画面中央に自動配置されるが、ページ全体の * { margin:0; } リセットで
+     打ち消されてしまうため、ここで明示的に指定し直している */
+  margin: auto;
+}
+
+/* <dialog>を開いた時に自動生成される背景の暗いオーバーレイ */
+.reservation-modal::backdrop {
+  background: rgba(27, 42, 74, 0.55);
+}
+
+.reservation-modal__form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px 24px;
+}
+
+.reservation-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(27, 42, 74, 0.08);
+  color: var(--color-navy);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reservation-modal__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--color-navy);
+  margin-bottom: 8px;
+  padding-right: 32px;
+  /* 閉じるボタンと文字が重ならないように */
+}
+
+.reservation-modal__desc {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  opacity: 0.75;
+  margin-bottom: 20px;
+}
+
+.reservation-modal__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-navy);
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+.reservation-modal__label:first-of-type {
+  margin-top: 0;
+}
+
+.reservation-modal__required {
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: 0.65rem;
+  margin-left: 4px;
+}
+
+.reservation-modal__input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  border: 1.5px solid rgba(27, 42, 74, 0.2);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.reservation-modal__input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.reservation-modal__textarea {
+  resize: vertical;
+}
+
+.reservation-modal__form .btn {
+  margin-top: 22px;
+}
+
+.reservation-modal__note {
+  font-size: 0.68rem;
+  opacity: 0.6;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.reservation-modal__success {
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  padding: 20px 0 4px;
+}
+
+.reservation-modal__success .btn {
+  margin-top: 18px;
+}
+
+/* ==========================================================================
+   PC（デスクトップ）向けレスポンシブスタイル
+   ここから下は、幅1024px以上の画面にだけ適用される追加スタイルです。
+   SP（スマホ）側のCSSは一切変更していません。すべて「上書き」で対応しています。
+   ========================================================================== */
+@media (min-width: 1024px) {
+
+  /* ---- 全体のフレーム ----
+     タブレット用の「カードが浮いた」見た目（box-shadow・角丸）をやめて、
+     ふつうのWebサイトらしい、画面幅いっぱいに近いレイアウトにする */
+  .lp-frame {
+    max-width: 1100px;
+    margin: 0 auto;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  /* ---- セクション共通：左右の余白を広げ、文字の横幅を読みやすい程度に制限する ----
+     calc()で「画面幅から880pxを引いた残りの半分」を左右の余白にすることで、
+     内容が中央に幅880pxくらいで収まるようにしています。
+     max()を使っているのは、1024px付近の画面でも余白が狭くなりすぎないようにするためです */
+  .section {
+    padding-top: 72px;
+    padding-bottom: 56px;
+    padding-left: max(48px, calc((100% - 880px) / 2));
+    padding-right: max(48px, calc((100% - 880px) / 2));
+  }
+
+  .section--dark {
+    padding-top: 80px;
+    padding-bottom: 64px;
+  }
+
+  /* ---- 見出し・本文サイズをPCらしく少し大きくする ---- */
+  .section__title {
+    font-size: 1.7rem;
+    margin-bottom: 28px;
+  }
+
+  .section__sub {
+    font-size: 0.85rem;
+  }
+
+  .section-heading-row__title {
+    font-size: 1.4rem;
+  }
+
+  .section-heading-row__icon {
+    width: 80px;
+  }
+
+  .label {
+    font-size: 0.8rem;
+  }
+
+  /* ---- ① ファーストビュー ----
+     スマホでは「下寄せ固定」だった構成をやめて、画面の中央あたりに
+     ゆったり配置する、いわゆる普通のPC向けヒーローセクションの組み方にする */
+  .fv {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 8%;
+  }
+
+  .fv__inner {
+    max-width: 620px;
+  }
+
+  .fv__kicker {
+    font-size: 0.9rem;
+    margin-top: 40px;
+  }
+
+  .fv__title {
+    font-size: 3.4rem;
+    margin-top: 80px;
+    margin-bottom: 16px;
+  }
+
+  .fv__lead {
+    font-size: 1.05rem;
+    padding: 10px 16px;
+    border-radius: 12px;
+    /* PCは横幅に余裕があるので、スマホ用に詰めた余白を元の大きさに戻す */
+  }
+
+  /* position:absoluteでの下端固定をやめて、通常の流れの中に置く */
+  .fv__bottom {
+    position: relative;
+    /* ← static から relative に変更 */
+    max-width: 460px;
+    margin-top: 320px;
+  }
+
+  .fv__ctas .btn,
+  .fv__stats {
+    font-size: 0.95rem;
+  }
+
+  .fv__stats {
+    gap: 18px;
+    padding: 12px 22px;
+    /* PCはスマホ用に詰めた余白を元の大きさに戻す */
+  }
+
+  /* ---- ②③ とおま + 一言（empathy-row）----
+     アイコンをひと回り大きく、文字も読みやすいサイズに */
+  .empathy-row__icon {
+    width: 120px;
+  }
+
+  .empathy-row__text {
+    font-size: 1.05rem;
+    line-height: 1.8;
+  }
+
+  .empathy-row,
+  .bubble-card,
+  .video-box,
+  .ticket-card,
+  .map-box,
+  .faq-list {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* 「一日の流れ」：グループ全体を1つのまとまりとして中央寄せする。
+     width:fit-content により、箱の幅が「一番長い行の幅」に自動で合わせられるため、
+     各行（アイコン+テキスト）は左詰めのまま、アイコンの縦の並びも揃います。
+     （align-items:centerだと行ごとに個別に中央寄せされ、行の長さが違うとアイコンの
+       位置がバラバラになってしまうため、こちらの方法に変更しました） */
+  .day-flow {
+    width: fit-content;
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .bubble {
+    font-size: 0.9rem;
+  }
+
+  /* ---- ③ 3つの数字カード ---- */
+  .stat-card__num {
+    font-size: 1.5rem;
+  }
+
+  .stat-card__label {
+    font-size: 0.78rem;
+  }
+
+  /* ---- ④来場シーン／⑦宿泊：横スクロールをやめてグリッド表示にする ----
+     マウス操作のPCでは「横にドラッグしてスクロール」が使いにくいため、
+     画面の余裕を活かして自動的に折り返すグリッドに変える。
+     auto-fit + minmax により、カードの枚数に応じて自然に列数が決まります。
+     ただし .scroll-row--carousel（来場者の声）は対象外にして、
+     PCでも横スクロールの自動スライドを維持する（すぐ下で上書き） */
+  .scroll-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    overflow: visible;
+    padding: 4px 0 4px;
+    margin: 0;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* 来場者の声：グリッド化せず、SPと同じ横スクロール＋自動スライドのままにする */
+  .scroll-row.scroll-row--carousel {
+    display: flex;
+    overflow-x: auto;
+    max-width: 700px;
+    padding: 4px 4px 14px;
+    margin: 0 auto;
+  }
+
+  .scene-card__body,
+  .lodging-card__desc,
+  .voice-card__text {
+    font-size: 0.85rem;
+  }
+
+  /* ---- ⑤ イベント情報・観覧席 ---- */
+  .ticket-card__title {
+    font-size: 0.95rem;
+  }
+
+  .ticket-card__desc {
+    font-size: 0.82rem;
+  }
+
+  /* ---- ⑥ ベネフィット：一日の流れを、縦並びから横並びに ---- */
+  .float-icon {
+    width: 130px;
+  }
+
+  .tag {
+    font-size: 0.85rem;
+    padding: 10px 20px;
+  }
+
+  /* ---- ⑨ FAQ：1列 → 2列グリッドにして、余白を有効活用する ---- */
+  .faq-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 840px;
+    align-items: start;
+    /* 追加：行の高さを揃えず、各アイテムが自分の中身の高さだけで収まるようにする */
+  }
+
+  .faq summary {
+    font-size: 0.9rem;
+  }
+
+  .faq p {
+    font-size: 0.82rem;
+  }
+
+  /* ---- ⑩ 最終CTA ---- */
+  .cta-title {
+    font-size: 2.1rem;
+  }
+
+  .cta-sub {
+    font-size: 0.95rem;
+  }
+
+  .cta-buttons {
+    flex-direction: row;
+    justify-content: center;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .footer-note {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+
+  /* ---- ボタン：ブロックボタンの横幅を、同じセクション内の他の要素
+     （.ticket-card など、下でmax-width:700pxに揃えているもの）と統一する ---- */
+  .btn--block {
+    width: 100%;
+    max-width: 700px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ---- 予約ポップアップ：PCでは少し大きめに ---- */
+  .reservation-modal {
+    width: min(90vw, 460px);
+  }
+
+  /* ---- 固定フッターCTA：PCでは画面端に接しない浮いたバーになるので、角を丸くする ----
+     （スマホでは画面幅いっぱいに広がるバーのため、ここでは丸めていません）
+     ※すぐ下の「1024〜1599px専用」ブロックで、中サイズPCの見た目はさらに上書きしています */
+  .sticky-cta {
+    border-radius: 16px;
+  }
+}
+
+/* ==========================================================================
+   幅1024〜1599pxの「中サイズPC」画面専用：
+   横長のバーだと本文の文字と重なって読みづらいという指摘への対応。
+   バーをやめて、丸いボタン2つを画面右下に縦に並べる形にする。
+   （1600px以上は、この下の別ブロックでさらに右側パネル型に上書きされます）
+   ========================================================================== */
+@media (min-width: 1024px) and (max-width: 1599px) {
+  .sticky-cta {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    /* 非表示の初期状態：右側の画面外にスライドさせておく */
+    transform: translateX(160%);
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: auto;
+    max-width: none;
+    /* ベージュの壁紙の上だと白ボタンが見えなくなるため、
+       ネイビーのカードを下敷きにして丸ボタンを乗せる */
+    background: var(--color-navy);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 20px 18px;
+    border-radius: 20px;
+  }
+
+  .sticky-cta.is-visible {
+    transform: translateX(0);
+  }
+
+  .sticky-cta__item {
+    width: auto;
+  }
+
+  /* 丸ボタンの中に長いボタン文言は収まらないため、吹き出し的な注記は非表示にする */
+  .sticky-cta__note {
+    display: none;
+  }
+
+  /* ボタン自体を、短いラベル（data-short属性）を表示する丸ボタンに作り替える */
+  .sticky-cta .btn {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 0;
+    /* 元の長いボタン文言(観覧席を予約する 等)は非表示にする */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .sticky-cta .btn::before {
+    content: attr(data-short);
+    /* HTML側のdata-short属性の短いラベルをここに表示する */
+    display: block;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.68rem;
+    line-height: 1.35;
+    text-align: center;
+    white-space: pre-line;
+    /* data-short内の改行(&#10;)をそのまま2行として表示する */
+  }
+}
+
+/* ==========================================================================
+   幅1600px以上の広いPC画面：固定CTAを画面右側の余白部分に
+   縦型のミニパネルとして表示する（.lp-frameは1100px幅で中央寄せのため、
+   1600px以上あれば右側に十分な余白ができる計算です）
+   1024〜1599pxの間は、これまで通り画面下部中央のバーのままです。
+   ========================================================================== */
+@media (min-width: 1600px) {
+  .sticky-cta {
+    left: auto;
+    right: 28px;
+    bottom: 28px;
+    /* 非表示の初期状態：右側の画面外にスライドさせておく */
+    transform: translateX(120%);
+    max-width: 220px;
+    width: 220px;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 18px;
+    border-radius: 18px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  }
+
+  /* 表示状態：右から画面内にスライドインしてくる */
+  .sticky-cta.is-visible {
+    transform: translateX(0);
+  }
+
+  .sticky-cta__item {
+    width: 100%;
+  }
+
+  .sticky-cta .btn {
+    font-size: 0.85rem;
+    padding: 13px 8px;
+  }
+
+  .sticky-cta__note {
+    font-size: 0.68rem;
+  }
+}

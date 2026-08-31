@@ -22,11 +22,11 @@
 
 // あなたが公開した「段階3用」スプレッドシートのCSV URL。
 // (「ファイル」→「共有」→「ウェブに公開」→CSV形式を選択 で発行されるURLです)
-var KNOWLEDGE_CSV_URL = 'ここに公開したスプレッドシートのCSV URLを貼り付けてください';
+var KNOWLEDGE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRQdVZPhn3e8z6mzVIvVCl1Iih5sPl6wRmmAcbY74bOIrQKbO2ZlV44PITXB8tZMFkxgYldqABZ9iKm/pub?gid=626182984&single=true&output=csv';
 
 // Railwayにデプロイしたバックエンドの /chat までのURL。
 // 例: 'https://tomachi-chatbot-backend-production.up.railway.app/chat'
-var BACKEND_URL = 'ここにRailwayで発行された/chatまでのURLを貼り付けてください';
+var BACKEND_URL = 'https://tomachi-chatbot-backend-production.up.railway.app/chat';
 
 document.addEventListener('DOMContentLoaded', function () {
 

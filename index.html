@@ -62,19 +62,19 @@
   <div class="lp-frame">
 
     <!-- ============ ① ファーストビュー（FV） ============ -->
-<header class="fv">
-  <!-- 背景動画（poster＝動画が読み込まれるまで／再生できない環境で表示される代わりの画像）
+    <header class="fv">
+      <!-- 背景動画（poster＝動画が読み込まれるまで／再生できない環境で表示される代わりの画像）
        3本の動画（①とおま／②花火／③商店街）を用意し、script.jsのJSで
        「Aが終わったらBに、Bが終わったらCに、Cが終わったらAに」と
        順番にふわっと切り替えながら無限ループさせています。
        1本のvideoタグにloopを付けるだけの方式だと複数動画の切り替えが
        できないため、videoタグを3つ重ねてCSSのopacityで
        見た目だけクロスフェードさせる仕組みにしています。 -->
-  <video id="fvBgVideoA" class="fv__bg-video is-active" src="videos/fv-tooma.mp4" poster="images/bg-fv.jpg" autoplay
-    muted playsinline></video>
-  <video id="fvBgVideoB" class="fv__bg-video" src="videos/fv-bg-fireworks.mp4" muted playsinline></video>
-  <video id="fvBgVideoC" class="fv__bg-video" src="videos/fv-bg-street.mp4" muted playsinline></video>
-    <div class="fv__overlay"></div>
+      <video id="fvBgVideoA" class="fv__bg-video is-active" src="videos/fv-tooma.mp4" poster="images/bg-fv.jpg" autoplay
+        muted playsinline></video>
+      <video id="fvBgVideoB" class="fv__bg-video" src="videos/fv-bg-fireworks.mp4" muted playsinline></video>
+      <video id="fvBgVideoC" class="fv__bg-video" src="videos/fv-bg-street.mp4" muted playsinline></video>
+      <div class="fv__overlay"></div>
       <!-- id="fvInner"：動画が切り替わるタイミングで、script.jsがこの中の
            文字（kicker/title/lead）を動画に合わせて差し替えます -->
       <div class="fv__inner" id="fvInner">
@@ -434,22 +434,12 @@
 
   </div><!-- /.lp-frame -->
 
-  <!-- P1-2: スクロール中ずっと表示される固定フッターCTA。
-       FVが画面内にある間は（FV自身のボタンと重複するため）script.jsで非表示にしています。
-       広いPC画面（1600px以上）では、右側の余白部分に縦型パネルとして表示されます -->
-  <div id="sticky-cta" class="sticky-cta">
-    <div class="sticky-cta__item">
-      <!-- ポップアップの予約フォームを開くボタン（js-open-reservation）に変更済み -->
-      <!-- data-short: 中サイズPC画面で丸ボタンにする時に、この短いラベルを表示する -->
-      <a href="#" class="btn btn--primary js-open-reservation" data-short="観覧席&#10;予約">観覧席を予約する</a>
-      <p class="sticky-cta__note">前日17時まで無料キャンセルOK</p>
-    </div>
-    <div class="sticky-cta__item">
-      <!-- TODO: href="#" を実際のLINE公式アカウントURLに差し替えてください -->
-      <a href="#" class="btn btn--outline" data-short="LINEで&#10;相談">LINEで宿を相談</a>
-      <p class="sticky-cta__note">相談だけでも大歓迎・LINEで1分</p>
-    </div>
-  </div>
+  <!-- P1-2: 元々ここにスクロール追従の固定フッターCTA(観覧席予約/LINE相談ボタン)が
+       ありましたが、右下のチャットボット(常時表示)と役割が重複するため廃止しました。
+       同じ2つの導線は、チャットウィンドウ内のクイックアクションボタンに引き継いでいます
+       (chatbot-snippet.html / index.htmlのチャットボットHTML部分を参照)。
+       ページ内の各セクションにある「席を予約しておく」「LINEで宿を相談する」等の
+       個別ボタンはそのまま残しています。 -->
 
   <!-- ==========================================================
        観覧席予約のポップアップフォーム
@@ -512,27 +502,45 @@
        ============================================================ -->
   <div id="chatbot" class="chatbot">
 
+    <!-- 挨拶の吹き出し:
+         ページを開いてから少し経つとふわっと表示され、数秒後に自動で消えます
+         (CSSのアニメーションだけで動いていて、JSはボタンを押した時に早く消す
+         処理だけを担当しています)。 -->
+    <div id="chatbot-greeting" class="chatbot__greeting" aria-hidden="true">
+      質問はこちらから
+    </div>
+
     <!-- 丸型トリガーボタン(右下固定) -->
-    <button
-      type="button"
-      id="chatbot-trigger"
-      class="chatbot__trigger"
-      aria-expanded="false"
-      aria-controls="chatbot-window"
-      aria-label="チャットを開く"
-    >
+    <button type="button" id="chatbot-trigger" class="chatbot__trigger" aria-expanded="false"
+      aria-controls="chatbot-window" aria-label="チャットを開く">
       <span class="chatbot__trigger-icon chatbot__trigger-icon--chat" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-        </svg>
+        <!-- 「⑥ベネフィット」セクションで使っているのと同じ、動く「とうま」の
+             動画をそのまま流用しています(videos/tooma-wink.mp4)。
+             autoplay・muted・loop・playsinline はサイト内の他の動画と同じ組み合わせで、
+             スマホでも自動再生されるようにするために必須のセットです。 -->
+        <video class="chatbot__trigger-video" src="videos/tooma-wink.mp4" poster="images/tooma-wink.png" autoplay muted
+          loop playsinline></video>
       </span>
       <span class="chatbot__trigger-icon chatbot__trigger-icon--close" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </span>
     </button>
+
+    <!-- 「これはチャットです」を示す小さいバッジ。
+         とうまの映像だけだとチャットだと気づきにくい人向けの補助アイコンなので、
+         チャットが開いている間(✕アイコン表示中)はCSSで自動的に隠しています。 -->
+    <span class="chatbot__badge" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path
+          d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+        </path>
+      </svg>
+    </span>
 
     <!-- チャットウィンドウ本体(初期状態は非表示、JSで開閉) -->
     <div id="chatbot-window" class="chatbot__window" role="dialog" aria-label="チャットウィンドウ" aria-hidden="true">
@@ -543,7 +551,8 @@
           <p class="chatbot__header-status">花火ナイトについて質問できます</p>
         </div>
         <button type="button" id="chatbot-close" class="chatbot__close" aria-label="チャットを閉じる">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -557,17 +566,21 @@
         </div>
       </div>
 
+      <!-- クイックアクション: 予約・LINE相談への近道(固定フッターCTA廃止の代わり)
+           「観覧席を予約する」は script.js が .js-open-reservation クラスを
+           自動で拾って予約モーダルを開いてくれるので、JS側の追加実装は不要 -->
+      <div class="chatbot__quick-actions">
+        <a href="#" class="chatbot__quick-action chatbot__quick-action--primary js-open-reservation">観覧席を予約する</a>
+        <!-- TODO: href="#" を実際のLINE公式アカウントURLに差し替えてください(他のLINEボタンと同じ仮リンクです) -->
+        <a href="#" class="chatbot__quick-action chatbot__quick-action--outline">LINEで宿を相談する</a>
+      </div>
+
       <form id="chatbot-form" class="chatbot__form">
-        <input
-          type="text"
-          id="chatbot-input"
-          class="chatbot__input"
-          placeholder="質問を入力..."
-          autocomplete="off"
-          aria-label="メッセージを入力"
-        >
+        <input type="text" id="chatbot-input" class="chatbot__input" placeholder="質問を入力..." autocomplete="off"
+          aria-label="メッセージを入力">
         <button type="submit" class="chatbot__send" aria-label="送信">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
           </svg>
@@ -578,6 +591,9 @@
   </div>
 
   <script src="script.js"></script>
+  <!-- PapaParse: Google SheetsのCSVを配列に変換するためのライブラリ(段階2で追加)
+       CDN依存を避けるため、papaparse.min.js をこのプロジェクトに同梱しています -->
+  <script src="papaparse.min.js"></script>
   <script src="chatbot.js"></script>
 </body>
 

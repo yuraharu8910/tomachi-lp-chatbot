@@ -24,9 +24,11 @@
 // (「ファイル」→「共有」→「ウェブに公開」→CSV形式を選択 で発行されるURLです)
 var KNOWLEDGE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRQdVZPhn3e8z6mzVIvVCl1Iih5sPl6wRmmAcbY74bOIrQKbO2ZlV44PITXB8tZMFkxgYldqABZ9iKm/pub?gid=626182984&single=true&output=csv';
 
-// Railwayにデプロイしたバックエンドの /chat までのURL。
-// 例: 'https://tomachi-chatbot-backend-production.up.railway.app/chat'
-var BACKEND_URL = 'https://tomachi-chatbot-backend-production.up.railway.app/chat';
+// バックエンド（AIに質問を渡すサーバー）のURL。
+// 2026年10月：Railwayの無料お試し期間が終わったため、無料のGoogle Apps Script(GAS)に引っ越し。
+// GASを「ウェブアプリ」として公開したURL（https://script.google.com/macros/s/…/exec）を入れる。
+// （旧：'https://tomachi-chatbot-backend-production.up.railway.app/chat'）
+var BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwEOBkj9vijILkKcTFssGcgRHRYpQdumZdpO8Fg-q-QYn_0b-Ach0WADCQ0FSCdpL1P/exec';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -227,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
     );
   }
 
-  /* ---- 6. バックエンド(Railway)経由でClaude APIに質問する ----------- */
+  /* ---- 6. バックエンド(Google Apps Script)経由でClaude APIに質問する ---- */
 
   function askAI(userInput, systemPrompt) {
     if (!BACKEND_URL || BACKEND_URL.indexOf('http') !== 0) {
@@ -236,10 +238,14 @@ document.addEventListener('DOMContentLoaded', function () {
       );
     }
 
+    // GASには「質問」だけを送る。AIへの指示文（システムプロンプト）とナレッジは
+    // GAS側で組み立てるので、LPから書き換えられることはない（安全のため）。
+    // ※ Content-Type を text/plain にするのは、GASがブラウザの事前確認
+    //   （プリフライト）に対応していないため。
     return fetch(BACKEND_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userInput: userInput, systemPrompt: systemPrompt }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ message: userInput }),
     })
       .then(function (res) {
         // バックエンドが用意しているエラーレスポンス(400/500/502など)は
@@ -254,7 +260,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return res.json();
       })
       .then(function (body) {
-        return body.answer || '回答を取得できませんでした。';
+        // GASはエラーでも「成功」として返すので、中身の error も確認する
+        if (body.error) {
+          throw new Error(body.error);
+        }
+        return body.reply || body.answer || '回答を取得できませんでした。';
       })
       .catch(function (error) {
         console.error('AIへの問い合わせに失敗しました:', error);
